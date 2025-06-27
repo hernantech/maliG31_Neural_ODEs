@@ -1,0 +1,19 @@
+# Build directories
+build/
+*.o
+*.so
+
+# Results
+data/results/*.txt
+data/results/*.csv
+data/results/*.png
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db 
