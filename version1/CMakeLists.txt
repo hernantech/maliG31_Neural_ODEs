@@ -1,59 +1,93 @@
-cmake_minimum_required(VERSION 3.10)
-project(RK45Benchmark VERSION 1.0.0 LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.16)
+project(RK45_Benchmark)
 
-# Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-# Compiler flags
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native")
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DDEBUG")
-
-# Default to Release build
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release)
-endif()
 
 # Find required packages
 find_package(PkgConfig REQUIRED)
-
-# Find OpenGL ES and EGL
 pkg_check_modules(EGL REQUIRED egl)
 pkg_check_modules(GLES REQUIRED glesv2)
 pkg_check_modules(GBM REQUIRED gbm)
 
-# Include directories
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-include_directories(${EGL_INCLUDE_DIRS})
-include_directories(${GLES_INCLUDE_DIRS})
-include_directories(${GBM_INCLUDE_DIRS})
+# Set build type
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
 
-# Source files
-set(SOURCES
-    src/main.cpp
-    src/cpu_solver.cpp
-    src/gpu_solver.cpp
-    src/test_problems.cpp
+# Compiler flags
+set(CMAKE_CXX_FLAGS_DEBUG "-g -Wall -Wextra")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+
+# Include directories
+include_directories(include)
+
+# Source files from organized structure
+set(CORE_SOURCES
+    src/core/cpu_solver.cpp
+    src/core/gpu_solver.cpp
+    src/core/test_problems.cpp
+    src/core/main.cpp
 )
 
-# Create executable
-add_executable(rk45_benchmark ${SOURCES})
+# Main benchmark executable
+add_executable(rk45_benchmark ${CORE_SOURCES})
 
 # Link libraries
 target_link_libraries(rk45_benchmark
     ${EGL_LIBRARIES}
     ${GLES_LIBRARIES}
     ${GBM_LIBRARIES}
-    -pthread
 )
 
-# Compiler definitions
-target_compile_definitions(rk45_benchmark PRIVATE
-    $<$<CONFIG:Debug>:DEBUG>
-    $<$<CONFIG:Release>:NDEBUG>
+# Include directories for libraries
+target_include_directories(rk45_benchmark PRIVATE
+    ${EGL_INCLUDE_DIRS}
+    ${GLES_INCLUDE_DIRS}
+    ${GBM_INCLUDE_DIRS}
 )
 
-# Print build information
+# Performance analysis tool
+add_executable(performance_analysis examples/performance_analysis.cpp src/core/cpu_solver.cpp src/core/test_problems.cpp)
+
+# Test executables (optional builds)
+option(BUILD_TESTS "Build test executables" OFF)
+
+if(BUILD_TESTS)
+    # Simple comparison test
+    add_executable(simple_comparison 
+        tests/simple_comparison.cpp 
+        src/core/cpu_solver.cpp 
+        src/core/gpu_solver.cpp 
+        src/core/test_problems.cpp
+    )
+    target_link_libraries(simple_comparison ${EGL_LIBRARIES} ${GLES_LIBRARIES} ${GBM_LIBRARIES})
+    target_include_directories(simple_comparison PRIVATE ${EGL_INCLUDE_DIRS} ${GLES_INCLUDE_DIRS} ${GBM_INCLUDE_DIRS})
+    
+    # Memory safe test
+    add_executable(test_memory_safe 
+        src/experimental/gpu_solver_memory_safe.cpp 
+        src/core/cpu_solver.cpp 
+        src/core/gpu_solver.cpp 
+        src/core/test_problems.cpp
+    )
+    target_link_libraries(test_memory_safe ${EGL_LIBRARIES} ${GLES_LIBRARIES} ${GBM_LIBRARIES})
+    target_include_directories(test_memory_safe PRIVATE ${EGL_INCLUDE_DIRS} ${GLES_INCLUDE_DIRS} ${GBM_INCLUDE_DIRS})
+    
+    # Massive parallel test
+    add_executable(test_massive_parallel 
+        src/experimental/gpu_solver_massively_parallel.cpp 
+        src/core/cpu_solver.cpp 
+        src/core/gpu_solver.cpp 
+        src/core/test_problems.cpp
+    )
+    target_link_libraries(test_massive_parallel ${EGL_LIBRARIES} ${GLES_LIBRARIES} ${GBM_LIBRARIES})
+    target_include_directories(test_massive_parallel PRIVATE ${EGL_INCLUDE_DIRS} ${GLES_INCLUDE_DIRS} ${GBM_INCLUDE_DIRS})
+endif()
+
+# Install targets to bin directory
+install(TARGETS rk45_benchmark DESTINATION bin)
+install(TARGETS performance_analysis DESTINATION bin)
+
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "EGL libraries: ${EGL_LIBRARIES}")
 message(STATUS "GLES libraries: ${GLES_LIBRARIES}")

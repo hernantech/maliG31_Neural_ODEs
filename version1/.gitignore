@@ -1,19 +1,45 @@
 # Build directories
 build/
-*.o
-*.so
+build_debug/
+build_release/
 
-# Results
-data/results/*.txt
-data/results/*.csv
-data/results/*.png
+# Binary executables in bin directory
+bin/rk45_benchmark
+bin/performance_analysis
+bin/simple_comparison
+bin/test_*
+
+# Compiled object files
+*.o
+*.a
+*.so
+*.dylib
+
+# CMake generated files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.cmake
 
 # IDE files
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# OS files
+# Results and temporary files
+data/results/*.csv
+data/results/*.txt
+*.log
+*.tmp
+
+# OS generated files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db 

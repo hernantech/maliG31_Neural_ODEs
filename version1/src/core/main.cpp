@@ -52,55 +52,68 @@ void run_benchmark(const ODESystem& system, double dt) {
     std::cout << "  Throughput: " << std::fixed << std::setprecision(0) 
               << system.dimension / cpu_time << " ODEs/second" << std::endl;
     
-    // GPU Solver (only for systems it supports)
-    if (system.name.find("Exponential") != std::string::npos || 
-        system.name.find("Scalability") != std::string::npos) {
+    // GPU Solver (only for exponential decay systems)
+    if (system.name.find("Exponential") != std::string::npos) {
         
         GPUSolver gpu_solver;
         
         std::cout << "\nRunning GPU solver..." << std::endl;
         timer.start();
         std::vector<std::vector<double>> gpu_solution;
-        gpu_solver.solve(system, system.t_start, system.t_end, dt, 
-                        system.initial_conditions, gpu_solution);
+        bool gpu_success = true;
+        
+        try {
+            gpu_solver.solve(system, system.t_start, system.t_end, dt, 
+                            system.initial_conditions, gpu_solution);
+        } catch (...) {
+            gpu_success = false;
+        }
+        
         double gpu_time = timer.elapsed();
         
-        double gpu_error = compute_error(gpu_solution, system, dt);
-        
-        std::cout << "GPU Results:" << std::endl;
-        std::cout << "  Time: " << std::fixed << std::setprecision(6) << gpu_time << " seconds" << std::endl;
-        if (gpu_error >= 0) {
-            std::cout << "  Max Error: " << std::scientific << std::setprecision(3) << gpu_error << std::endl;
-        }
-        std::cout << "  Throughput: " << std::fixed << std::setprecision(0) 
-                  << system.dimension / gpu_time << " ODEs/second" << std::endl;
-        
-        // Comparison
-        std::cout << "\nComparison:" << std::endl;
-        if (gpu_time > 0) {
-            double speedup = cpu_time / gpu_time;
-            std::cout << "  Speedup: " << std::fixed << std::setprecision(2) << speedup << "x";
-            if (speedup > 1.0) {
-                std::cout << " (GPU faster)";
-            } else {
-                std::cout << " (CPU faster)";
+        if (gpu_success && !gpu_solution.empty()) {
+            double gpu_error = compute_error(gpu_solution, system, dt);
+            
+            std::cout << "GPU Results:" << std::endl;
+            std::cout << "  Time: " << std::fixed << std::setprecision(6) << gpu_time << " seconds" << std::endl;
+            if (gpu_error >= 0) {
+                std::cout << "  Max Error: " << std::scientific << std::setprecision(3) << gpu_error << std::endl;
             }
-            std::cout << std::endl;
-        }
-        
-        // Solution consistency check
-        if (!cpu_solution.empty() && !gpu_solution.empty()) {
-            double max_diff = 0.0;
-            size_t min_size = std::min(cpu_solution.size(), gpu_solution.size());
-            for (size_t i = 0; i < min_size; ++i) {
-                for (size_t j = 0; j < cpu_solution[i].size(); ++j) {
-                    double diff = std::abs(cpu_solution[i][j] - gpu_solution[i][j]);
-                    max_diff = std::max(max_diff, diff);
+            std::cout << "  Throughput: " << std::fixed << std::setprecision(0) 
+                      << system.dimension / gpu_time << " ODEs/second" << std::endl;
+            
+            // Comparison
+            std::cout << "\nComparison:" << std::endl;
+            if (gpu_time > 0) {
+                double speedup = cpu_time / gpu_time;
+                std::cout << "  Speedup: " << std::fixed << std::setprecision(2) << speedup << "x";
+                if (speedup > 1.0) {
+                    std::cout << " (GPU faster)";
+                } else {
+                    std::cout << " (CPU faster)";
                 }
+                std::cout << std::endl;
             }
-            std::cout << "  Max CPU-GPU difference: " << std::scientific 
-                      << std::setprecision(3) << max_diff << std::endl;
+            
+            // Solution consistency check
+            if (!cpu_solution.empty() && !gpu_solution.empty()) {
+                double max_diff = 0.0;
+                size_t min_size = std::min(cpu_solution.size(), gpu_solution.size());
+                for (size_t i = 0; i < min_size; ++i) {
+                    for (size_t j = 0; j < cpu_solution[i].size(); ++j) {
+                        double diff = std::abs(cpu_solution[i][j] - gpu_solution[i][j]);
+                        max_diff = std::max(max_diff, diff);
+                    }
+                }
+                std::cout << "  Max CPU-GPU difference: " << std::scientific 
+                          << std::setprecision(3) << max_diff << std::endl;
+            }
+        } else {
+            std::cout << "GPU Results:" << std::endl;
+            std::cout << "  Status: Failed to solve" << std::endl;
         }
+    } else {
+        std::cout << "\nGPU solver: Skipped (only supports exponential decay problems)" << std::endl;
     }
 }
 
@@ -114,7 +127,7 @@ int main() {
     auto exp_decay = TestProblems::create_exponential_decay();
     run_benchmark(exp_decay, dt);
     
-    // Test 2: Scalability tests
+    // Test 2: Scalability tests (CPU only)
     std::vector<int> problem_sizes = {100, 1000, 10000};
     
     for (int N : problem_sizes) {

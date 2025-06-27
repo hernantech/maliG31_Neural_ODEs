@@ -18,10 +18,13 @@ public:
     
     std::string name() const override { return "GPU_RK45"; }
 
-private:
+protected:
     bool initialize_gpu();
-    void cleanup_gpu();
     GLuint compile_compute_shader(const std::string& source);
+    bool initialized;
+
+private:
+    void cleanup_gpu();
     
     // GPU context
     int dri_fd;
@@ -33,5 +36,4 @@ private:
     GLuint program;
     GLuint state_buffer;
     GLuint param_buffer;
-    bool initialized;
 }; 
