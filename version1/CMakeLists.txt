@@ -82,6 +82,34 @@ if(BUILD_TESTS)
     )
     target_link_libraries(test_massive_parallel ${EGL_LIBRARIES} ${GLES_LIBRARIES} ${GBM_LIBRARIES})
     target_include_directories(test_massive_parallel PRIVATE ${EGL_INCLUDE_DIRS} ${GLES_INCLUDE_DIRS} ${GBM_INCLUDE_DIRS})
+    
+    # GPU-optimal solver tests
+    add_executable(euler_massively_parallel 
+        src/experimental/gpu_solver_euler_massively_parallel.cpp 
+        src/core/cpu_solver.cpp 
+        src/core/gpu_solver.cpp 
+        src/core/test_problems.cpp
+    )
+    target_link_libraries(euler_massively_parallel ${EGL_LIBRARIES} ${GLES_LIBRARIES} ${GBM_LIBRARIES})
+    target_include_directories(euler_massively_parallel PRIVATE ${EGL_INCLUDE_DIRS} ${GLES_INCLUDE_DIRS} ${GBM_INCLUDE_DIRS})
+    
+    add_executable(leapfrog_physics 
+        src/experimental/gpu_solver_leapfrog.cpp 
+        src/core/cpu_solver.cpp 
+        src/core/gpu_solver.cpp 
+        src/core/test_problems.cpp
+    )
+    target_link_libraries(leapfrog_physics ${EGL_LIBRARIES} ${GLES_LIBRARIES} ${GBM_LIBRARIES})
+    target_include_directories(leapfrog_physics PRIVATE ${EGL_INCLUDE_DIRS} ${GLES_INCLUDE_DIRS} ${GBM_INCLUDE_DIRS})
+    
+    add_executable(gpu_solver_comparison 
+        tests/gpu_solver_comparison.cpp 
+        src/core/cpu_solver.cpp 
+        src/core/gpu_solver.cpp 
+        src/core/test_problems.cpp
+    )
+    target_link_libraries(gpu_solver_comparison ${EGL_LIBRARIES} ${GLES_LIBRARIES} ${GBM_LIBRARIES})
+    target_include_directories(gpu_solver_comparison PRIVATE ${EGL_INCLUDE_DIRS} ${GLES_INCLUDE_DIRS} ${GBM_INCLUDE_DIRS})
 endif()
 
 # Install targets to bin directory
