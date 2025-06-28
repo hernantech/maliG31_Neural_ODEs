@@ -39,10 +39,13 @@ set(STEPPER_SOURCES
 set(GPU_UTIL_SOURCES
     src/gpu_utils/builtin_rhs_registry.cpp
     src/gpu_utils/shader_generator.cpp
+    src/gpu_utils/gpu_buffer_manager.cpp
+    src/gpu_utils/gpu_context_manager.cpp
 )
 
 set(BACKEND_SOURCES
     src/backends/cpu_backend.cpp
+    src/backends/gpu_euler_backend.cpp
 )
 
 # Main benchmark executable
@@ -134,12 +137,16 @@ if(BUILD_TESTS)
         ${STEPPER_SOURCES}
         ${GPU_UTIL_SOURCES}
     )
+    target_link_libraries(test_new_architecture ${EGL_LIBRARIES} ${GLES_LIBRARIES} ${GBM_LIBRARIES})
+    target_include_directories(test_new_architecture PRIVATE ${EGL_INCLUDE_DIRS} ${GLES_INCLUDE_DIRS} ${GBM_INCLUDE_DIRS})
     
     # Show generated shader
     add_executable(show_generated_shader 
         tests/show_generated_shader.cpp 
         ${GPU_UTIL_SOURCES}
     )
+    target_link_libraries(show_generated_shader ${EGL_LIBRARIES} ${GLES_LIBRARIES} ${GBM_LIBRARIES})
+    target_include_directories(show_generated_shader PRIVATE ${EGL_INCLUDE_DIRS} ${GLES_INCLUDE_DIRS} ${GBM_INCLUDE_DIRS})
     
     # Test Van der Pol
     add_executable(test_vanderpol 
@@ -148,6 +155,29 @@ if(BUILD_TESTS)
         ${STEPPER_SOURCES}
         ${GPU_UTIL_SOURCES}
     )
+    target_link_libraries(test_vanderpol ${EGL_LIBRARIES} ${GLES_LIBRARIES} ${GBM_LIBRARIES})
+    target_include_directories(test_vanderpol PRIVATE ${EGL_INCLUDE_DIRS} ${GLES_INCLUDE_DIRS} ${GBM_INCLUDE_DIRS})
+    
+    # GPU vs CPU comprehensive test
+    add_executable(test_gpu_vs_cpu 
+        tests/test_gpu_vs_cpu.cpp 
+        src/core/test_problems.cpp
+        ${STEPPER_SOURCES}
+        ${GPU_UTIL_SOURCES}
+        ${BACKEND_SOURCES}
+    )
+    target_link_libraries(test_gpu_vs_cpu ${EGL_LIBRARIES} ${GLES_LIBRARIES} ${GBM_LIBRARIES})
+    target_include_directories(test_gpu_vs_cpu PRIVATE ${EGL_INCLUDE_DIRS} ${GLES_INCLUDE_DIRS} ${GBM_INCLUDE_DIRS})
+    
+    # Simple GPU test
+    add_executable(test_gpu_simple 
+        tests/test_gpu_simple.cpp 
+        src/core/test_problems.cpp
+        ${GPU_UTIL_SOURCES}
+        ${BACKEND_SOURCES}
+    )
+    target_link_libraries(test_gpu_simple ${EGL_LIBRARIES} ${GLES_LIBRARIES} ${GBM_LIBRARIES})
+    target_include_directories(test_gpu_simple PRIVATE ${EGL_INCLUDE_DIRS} ${GLES_INCLUDE_DIRS} ${GBM_INCLUDE_DIRS})
 endif()
 
 # Install targets to bin directory

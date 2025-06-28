@@ -61,8 +61,12 @@ std::string ShaderGenerator::substitute_rhs(const std::string& template_code,
 
 std::string ShaderGenerator::generate_uniform_declarations(const std::vector<std::string>& uniform_names) {
     std::stringstream ss;
-    for (const auto& name : uniform_names) {
-        ss << "    float " << name << ";\n";
+    ss << "    float user_uniforms[16];\n";
+    
+    // Add convenience accessors as macros
+    for (size_t i = 0; i < uniform_names.size(); ++i) {
+        ss << "#define " << uniform_names[i] << " user_uniforms[" << i << "]\n";
     }
+    
     return ss.str();
 } 

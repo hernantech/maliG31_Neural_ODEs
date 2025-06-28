@@ -1,11 +1,12 @@
 #pragma once
 #include "solver_base.h"
 #include "shader_generator.h"
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
+#include "gpu_buffer_manager.h"
+#include "builtin_rhs_registry.h"
+#include "gpu_context_manager.h"
 #include <GLES3/gl3.h>
 #include <GLES3/gl31.h>
-#include <gbm.h>
+#include <unordered_map>
 
 class GPUEulerBackend : public SolverBase {
 public:
@@ -20,19 +21,12 @@ public:
     std::string name() const override { return "GPU_Euler"; }
 
 protected:
-    bool initialize_gpu();
-    GLuint compile_compute_shader(const std::string& source);
-    bool initialized;
+    GLuint get_or_compile_shader(const ODESystem& system);
+    void setup_uniforms(const ODESystem& system, SystemParams& params);
 
 private:
-    void cleanup_gpu();
-    
-    // GPU context
-    int dri_fd;
-    struct gbm_device* gbm;
-    EGLDisplay display;
-    EGLContext context;
-    
-    // Shader generation
+    // Shader and buffer management
     ShaderGenerator shader_gen_;
+    GPUBufferManager buffer_mgr_;
+    std::unordered_map<std::string, GLuint> shader_cache_;
 }; 
