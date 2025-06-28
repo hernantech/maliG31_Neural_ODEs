@@ -29,6 +29,22 @@ set(CORE_SOURCES
     src/core/main.cpp
 )
 
+# New architecture sources
+set(STEPPER_SOURCES
+    src/steppers/explicit_euler.cpp
+    src/steppers/rk45.cpp
+    src/steppers/stepper_factory.cpp
+)
+
+set(GPU_UTIL_SOURCES
+    src/gpu_utils/builtin_rhs_registry.cpp
+    src/gpu_utils/shader_generator.cpp
+)
+
+set(BACKEND_SOURCES
+    src/backends/cpu_backend.cpp
+)
+
 # Main benchmark executable
 add_executable(rk45_benchmark ${CORE_SOURCES})
 
@@ -110,11 +126,36 @@ if(BUILD_TESTS)
     )
     target_link_libraries(gpu_solver_comparison ${EGL_LIBRARIES} ${GLES_LIBRARIES} ${GBM_LIBRARIES})
     target_include_directories(gpu_solver_comparison PRIVATE ${EGL_INCLUDE_DIRS} ${GLES_INCLUDE_DIRS} ${GBM_INCLUDE_DIRS})
+    
+    # Test new architecture
+    add_executable(test_new_architecture 
+        tests/test_new_architecture.cpp 
+        src/core/test_problems.cpp
+        ${STEPPER_SOURCES}
+        ${GPU_UTIL_SOURCES}
+    )
+    
+    # Show generated shader
+    add_executable(show_generated_shader 
+        tests/show_generated_shader.cpp 
+        ${GPU_UTIL_SOURCES}
+    )
+    
+    # Test Van der Pol
+    add_executable(test_vanderpol 
+        tests/test_vanderpol.cpp 
+        src/core/test_problems.cpp
+        ${STEPPER_SOURCES}
+        ${GPU_UTIL_SOURCES}
+    )
 endif()
 
 # Install targets to bin directory
 install(TARGETS rk45_benchmark DESTINATION bin)
 install(TARGETS performance_analysis DESTINATION bin)
+
+# Copy shader templates to build directory
+file(COPY shaders/ DESTINATION ${CMAKE_BINARY_DIR}/shaders/)
 
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "EGL libraries: ${EGL_LIBRARIES}")

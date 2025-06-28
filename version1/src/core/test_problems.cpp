@@ -20,6 +20,11 @@ ODESystem TestProblems::create_exponential_decay() {
         return {std::exp(-2.0 * t)};
     };
     
+    // GPU support
+    system.gpu_info = ODESystem::GPUInfo{};
+    system.gpu_info->builtin_rhs_name = "exponential";
+    system.gpu_info->gpu_uniforms = {2.0f};  // lambda value
+    
     return system;
 }
 
@@ -39,6 +44,11 @@ ODESystem TestProblems::create_van_der_pol() {
         double mu = 1.0;
         return {v, mu * (1 - x*x) * v - x};
     };
+    
+    // GPU support
+    system.gpu_info = ODESystem::GPUInfo{};
+    system.gpu_info->builtin_rhs_name = "vanderpol";
+    system.gpu_info->gpu_uniforms = {1.0f};  // mu value
     
     return system;
 }

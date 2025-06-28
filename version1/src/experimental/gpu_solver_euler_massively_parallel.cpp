@@ -106,7 +106,20 @@ private:
     
 public:
     EulerMassivelyParallelGPUSolver() : euler_program(0), program_compiled(false) {
-        initialize_shared_context();
+        // Use the first constructed instance as the shared context instead of
+        // recursively allocating a new object (which previously led to an
+        // infinite constructor loop and eventually an OOM-kill).
+        shared_context = this;
+
+        // Ensure the underlying GPU/EGL context is created once.
+        if (!this->initialized) {
+            if (!this->initialize_gpu()) {
+                std::cerr << "EulerGPU: Failed to initialize GPU context" << std::endl;
+            }
+        }
+
+        context_initialized = true;
+        std::cout << "EulerGPU: Initialized shared context (memory-safe)" << std::endl;
         compile_euler_shader();
     }
     
@@ -117,14 +130,6 @@ public:
     }
     
 private:
-    void initialize_shared_context() {
-        if (!context_initialized) {
-            shared_context = new EulerMassivelyParallelGPUSolver();
-            context_initialized = true;
-            std::cout << "EulerGPU: Initialized shared context (memory-safe)" << std::endl;
-        }
-    }
-    
     void compile_euler_shader() {
         if (!shared_context || !shared_context->initialized) {
             std::cerr << "EulerGPU: Shared context not ready" << std::endl;
