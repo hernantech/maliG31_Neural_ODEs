@@ -9,7 +9,7 @@
 // MASSIVELY PARALLEL: Use ALL GPU threads by solving multiple problems
 const std::string compute_shader_massively_parallel = R"(
 #version 310 es
-layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = 4, local_size_y = 1, local_size_z = 1) in;
 
 layout(std430, binding = 0) buffer StateBuffer {
     float state_data[];  // [problem0_eq0, problem0_eq1, ..., problem1_eq0, problem1_eq1, ...]
@@ -184,7 +184,7 @@ public:
         
         // MASSIVE PARALLEL DISPATCH - use ALL GPU threads
         glUseProgram(parallel_program);
-        GLuint work_groups = (total_equations + 63) / 64;  // Round up to use all threads
+        GLuint work_groups = (total_equations + 3) / 4;  // Round up to use all threads
         std::cout << "- Dispatching " << work_groups << " workgroups" << std::endl;
         
         glDispatchCompute(work_groups, 1, 1);

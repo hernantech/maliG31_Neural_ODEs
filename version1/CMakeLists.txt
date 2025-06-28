@@ -178,6 +178,17 @@ if(BUILD_TESTS)
     )
     target_link_libraries(test_gpu_simple ${EGL_LIBRARIES} ${GLES_LIBRARIES} ${GBM_LIBRARIES})
     target_include_directories(test_gpu_simple PRIVATE ${EGL_INCLUDE_DIRS} ${GLES_INCLUDE_DIRS} ${GBM_INCLUDE_DIRS})
+    
+    # Architecture correction validation test
+    add_executable(test_architecture_correction 
+        tests/test_architecture_correction.cpp 
+        src/core/test_problems.cpp
+        ${STEPPER_SOURCES}
+        ${GPU_UTIL_SOURCES}
+        ${BACKEND_SOURCES}
+    )
+    target_link_libraries(test_architecture_correction ${EGL_LIBRARIES} ${GLES_LIBRARIES} ${GBM_LIBRARIES})
+    target_include_directories(test_architecture_correction PRIVATE ${EGL_INCLUDE_DIRS} ${GLES_INCLUDE_DIRS} ${GBM_INCLUDE_DIRS})
 endif()
 
 # Install targets to bin directory

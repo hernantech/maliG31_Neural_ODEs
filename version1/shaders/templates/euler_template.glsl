@@ -1,5 +1,5 @@
 #version 310 es
-layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = 4, local_size_y = 1, local_size_z = 1) in;
 
 layout(std430, binding = 0) buffer StateBuffer {
     float current_state[];  // [eq0, eq1, eq2, ..., eq_N-1]

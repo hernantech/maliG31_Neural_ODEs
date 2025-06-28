@@ -8,7 +8,7 @@
 // LEAPFROG/VERLET: Excellent for physics (Hamiltonian systems)
 const std::string leapfrog_shader = R"(
 #version 310 es
-layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = 4, local_size_y = 1, local_size_z = 1) in;
 
 layout(std430, binding = 0) buffer PositionBuffer {
     float positions[];  // [x0, y0, z0, x1, y1, z1, ...]
@@ -211,7 +211,7 @@ public:
         std::cout << "Particles: " << n_particles << std::endl;
         std::cout << "Dimensions: " << dimensions << std::endl;
         std::cout << "Total coordinates: " << total_coords << std::endl;
-        std::cout << "ALU utilization: " << (n_particles * 100.0 / 64.0) << "%" << std::endl;
+        std::cout << "ALU utilization: " << (n_particles * 100.0 / 4.0) << "%" << std::endl;
         std::cout << "Timesteps: " << n_steps << std::endl;
         std::cout << "Expected energy conservation: Exact (symplectic)" << std::endl;
         
@@ -311,7 +311,7 @@ public:
             glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
             
             // Leapfrog step
-            GLuint work_groups = (n_particles + 63) / 64;
+            GLuint work_groups = (n_particles + 3) / 4;
             glDispatchCompute(work_groups, 1, 1);
             glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
         }
@@ -378,12 +378,12 @@ void test_leapfrog_physics() {
     std::cout << "   Time: " << leapfrog_time * 1000 << " ms" << std::endl;
     std::cout << "   Throughput: " << (2 * 200) / leapfrog_time << " particle-steps/second" << std::endl;
     
-    // Test 2: Many-body spring system (1D)
-    std::cout << "\n2. 64-particle spring chain (1D):" << std::endl;
+    // Test 2: Small spring system (1D) - Optimized for Mali G31 MP2
+    std::cout << "\n2. 4-particle spring chain (1D):" << std::endl;
     
-    std::vector<double> spring_pos(64);
-    std::vector<double> spring_vel(64);
-    for (int i = 0; i < 64; ++i) {
+    std::vector<double> spring_pos(4);
+    std::vector<double> spring_vel(4);
+    for (int i = 0; i < 4; ++i) {
         spring_pos[i] = i * 0.1;  // Initial positions
         spring_vel[i] = 0.0;      // Start from rest
     }
@@ -392,13 +392,13 @@ void test_leapfrog_physics() {
     std::vector<double> spring_energy;
     
     timer.start();
-    leapfrog_gpu.solve_physics_system(64, 1, 0.001, 1.0, spring_pos, spring_vel,
+    leapfrog_gpu.solve_physics_system(4, 1, 0.001, 1.0, spring_pos, spring_vel,
                                      spring_history, spring_energy);
     double spring_time = timer.elapsed();
     
     std::cout << "   Time: " << spring_time * 1000 << " ms" << std::endl;
-    std::cout << "   Throughput: " << (64 * 1000) / spring_time << " particle-steps/second" << std::endl;
-    std::cout << "   ALU utilization: 100% (64/64 threads for 64 particles)" << std::endl;
+    std::cout << "   Throughput: " << (4 * 1000) / spring_time << " particle-steps/second" << std::endl;
+    std::cout << "   ALU utilization: 100% (4/4 ALUs for 4 particles)" << std::endl;
 }
 
 int main() {

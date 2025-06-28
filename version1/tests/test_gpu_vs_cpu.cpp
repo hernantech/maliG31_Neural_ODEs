@@ -133,21 +133,21 @@ void test_van_der_pol() {
     }
 }
 
-void test_large_system() {
-    std::cout << "\n=== LARGE SYSTEM TEST ===" << std::endl;
+void test_small_system() {
+    std::cout << "\n=== SMALL SYSTEM TEST ===" << std::endl;
     
-    // Create a large exponential decay system
-    const int N = 128;  // Use all GPU ALUs
-    ODESystem large_system;
-    large_system.name = "Large Exponential System";
-    large_system.dimension = N;
-    large_system.t_start = 0.0;
-    large_system.t_end = 1.0;
-    large_system.initial_conditions.resize(N, 1.0);
-    large_system.parameters["lambda"] = 2.0;
+    // Create a small exponential decay system optimized for Mali G31 MP2
+    const int N = 4;  // Match actual GPU ALU count (4 ALUs, not 128!)
+    ODESystem small_system;
+    small_system.name = "Small Exponential System";
+    small_system.dimension = N;
+    small_system.t_start = 0.0;
+    small_system.t_end = 1.0;
+    small_system.initial_conditions.resize(N, 1.0);
+    small_system.parameters["lambda"] = 2.0;
     
     // RHS function: dy_i/dt = -lambda * y_i for all i
-    large_system.rhs = [](double t, const std::vector<double>& y) -> std::vector<double> {
+    small_system.rhs = [](double t, const std::vector<double>& y) -> std::vector<double> {
         std::vector<double> dydt(y.size());
         for (size_t i = 0; i < y.size(); ++i) {
             dydt[i] = -2.0 * y[i];
@@ -156,16 +156,16 @@ void test_large_system() {
     };
     
     // GPU support
-    large_system.gpu_info = ODESystem::GPUInfo{};
-    large_system.gpu_info->builtin_rhs_name = "exponential";
-    large_system.gpu_info->gpu_uniforms = {2.0f};
+    small_system.gpu_info = ODESystem::GPUInfo{};
+    small_system.gpu_info->builtin_rhs_name = "exponential";
+    small_system.gpu_info->gpu_uniforms = {2.0f};
     
     const double dt = 0.01;
     const double tf = 1.0;
     
-    std::cout << "Problem: " << large_system.name << std::endl;
+    std::cout << "Problem: " << small_system.name << std::endl;
     std::cout << "Dimension: " << N << " equations" << std::endl;
-    std::cout << "ALU utilization: 100% (all 128 cores)" << std::endl;
+    std::cout << "ALU utilization: 100% (all 4 ALUs)" << std::endl;
     
     Timer timer;
     
@@ -176,7 +176,7 @@ void test_large_system() {
     
     std::vector<std::vector<double>> cpu_solution;
     timer.start();
-    cpu_euler.solve(large_system, 0.0, tf, dt, large_system.initial_conditions, cpu_solution);
+    cpu_euler.solve(small_system, 0.0, tf, dt, small_system.initial_conditions, cpu_solution);
     double cpu_time = timer.elapsed();
     
     std::cout << "   Time: " << cpu_time * 1000 << " ms" << std::endl;
@@ -188,7 +188,7 @@ void test_large_system() {
     
     std::vector<std::vector<double>> gpu_solution;
     timer.start();
-    gpu_euler.solve(large_system, 0.0, tf, dt, large_system.initial_conditions, gpu_solution);
+    gpu_euler.solve(small_system, 0.0, tf, dt, small_system.initial_conditions, gpu_solution);
     double gpu_time = timer.elapsed();
     
     if (!gpu_solution.empty()) {
@@ -221,7 +221,7 @@ int main() {
     try {
         test_exponential_decay();
         test_van_der_pol();
-        test_large_system();
+        test_small_system();
         
         std::cout << "\n=== COMPREHENSIVE TEST SUMMARY ===" << std::endl;
         std::cout << "✓ GPU backend implementation complete" << std::endl;

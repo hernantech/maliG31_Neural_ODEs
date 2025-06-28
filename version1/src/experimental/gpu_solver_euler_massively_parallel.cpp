@@ -5,10 +5,10 @@
 #include <vector>
 #include <cmath>
 
-// EXPLICIT EULER: PERFECT for 128 ALUs - no sequential dependencies!
+// EXPLICIT EULER: PERFECT for 4 ALUs - no sequential dependencies!
 const std::string euler_massively_parallel_shader = R"(
 #version 310 es
-layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = 4, local_size_y = 1, local_size_z = 1) in;
 
 layout(std430, binding = 0) buffer StateBuffer {
     float current_state[];  // [eq0, eq1, eq2, ..., eq_N-1]
@@ -147,7 +147,7 @@ private:
     }
     
 public:
-    // Solve large ODE system using ALL 128 ALUs efficiently
+    // Solve large ODE system using ALL 4 ALUs efficiently
     void solve_large_system(int problem_type, int n_equations, double dt, double t_final,
                            const std::vector<double>& initial_conditions,
                            std::vector<std::vector<double>>& solution) {
@@ -162,7 +162,7 @@ public:
         std::cout << "\n=== EULER MASSIVE PARALLELISM ===" << std::endl;
         std::cout << "Problem type: " << problem_type << std::endl;
         std::cout << "Equations: " << n_equations << std::endl;
-        std::cout << "ALU utilization: " << (n_equations * 100.0 / 128.0) << "%" << std::endl;
+        std::cout << "ALU utilization: " << (n_equations * 100.0 / 4.0) << "%" << std::endl;
         std::cout << "Timesteps: " << n_steps << std::endl;
         std::cout << "Memory per timestep: " << (n_equations * 4 / 1024.0) << " KB" << std::endl;
         
@@ -234,8 +234,8 @@ public:
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, time_buffer);
             glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(time_control), &time_control);
             
-            // DISPATCH ALL 128 ALUs: Each handles one equation
-            GLuint work_groups = (n_equations + 127) / 128;
+            // DISPATCH ALL 4 ALUs: Each handles one equation
+            GLuint work_groups = (n_equations + 3) / 4;
             glDispatchCompute(work_groups, 1, 1);
             glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
         }
@@ -277,7 +277,7 @@ void test_euler_vs_rk45() {
     std::cout << "=== EULER vs RK45 GPU PERFORMANCE ===" << std::endl;
     
     Timer timer;
-    const int N = 128;  // Use ALL ALUs
+    const int N = 4;  // Use ALL ALUs (Mali G31 MP2 has 4 ALUs)
     const double dt = 0.001;  // Smaller timestep for Euler accuracy
     const double tf = 1.0;
     
@@ -294,7 +294,7 @@ void test_euler_vs_rk45() {
     
     std::cout << "   Time: " << euler_time * 1000 << " ms" << std::endl;
     std::cout << "   Throughput: " << N / euler_time << " ODEs/second" << std::endl;
-    std::cout << "   ALU efficiency: 100% (128/128 threads)" << std::endl;
+    std::cout << "   ALU efficiency: 100% (4/4 threads)" << std::endl;
     
     if (!euler_solution.empty()) {
         std::cout << "   Final value: " << euler_solution.back()[0] << std::endl;

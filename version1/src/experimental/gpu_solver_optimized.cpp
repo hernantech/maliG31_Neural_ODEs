@@ -10,7 +10,7 @@
 // OPTIMIZED: Advanced compute shader with proper numerical methods
 const std::string compute_shader_source_optimized = R"(
 #version 310 es
-layout(local_size_x = 64) in;
+layout(local_size_x = 4) in;
 
 // Shared memory for Butcher tableau coefficients (frequently accessed)
 shared float butcher_coeffs[20]; // a21, a31, a32, a41, a42, a43, a51, a52, a53, a54, a61, a62, a63, a64, a65, b1, b3, b4, b5, b6
@@ -191,8 +191,8 @@ public:
         glUseProgram(optimized_program);
         
         // OPTIMIZATION: Tune workgroup size for Mali G31 MP2
-        // Mali G31 MP2 has 2 shader cores, optimize for 64 threads per workgroup
-        GLuint work_groups = (n_equations + 63) / 64;
+        // Mali G31 MP2 has 4 ALUs, optimize for 4 threads per workgroup
+        GLuint work_groups = (n_equations + 3) / 4;
         glDispatchCompute(work_groups, 1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
         

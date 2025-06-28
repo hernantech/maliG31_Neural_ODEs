@@ -47,7 +47,7 @@ public:
         
         BenchmarkResult result;
         result.method_name = "Euler GPU";
-        result.equations_solved = 128;  // Use ALL ALUs
+        result.equations_solved = 4;  // Use ALL ALUs (Mali G31 MP2 has 4 ALUs)
         result.alu_utilization_percent = 100.0;
         result.energy_conserved = false;  // Not symplectic
         
@@ -56,16 +56,16 @@ public:
         const int n_steps = static_cast<int>(tf / dt);
         
         // Memory calculation
-        result.memory_usage_mb = (128 * n_steps * sizeof(float)) / (1024.0 * 1024.0);
+        result.memory_usage_mb = (4 * n_steps * sizeof(float)) / (1024.0 * 1024.0);
         
         // Simulate Euler performance (single stage, embarrassingly parallel)
         timer.start();
         
         // Simulation: Each ALU handles one ODE independently
-        std::vector<double> solutions(128);
+        std::vector<double> solutions(4);
         for (int step = 0; step < n_steps; ++step) {
-            // ALL 128 ALUs work simultaneously - no dependencies!
-            for (int eq = 0; eq < 128; ++eq) {
+            // ALL 4 ALUs work simultaneously - no dependencies!
+            for (int eq = 0; eq < 4; ++eq) {
                 // y_{n+1} = y_n + dt * f(t_n, y_n)  [Single stage]
                 solutions[eq] = solutions[eq] + dt * (-2.0 * solutions[eq]);  // Exponential decay
             }
@@ -78,7 +78,7 @@ public:
         double analytical = std::exp(-2.0 * tf);
         result.accuracy_error = std::abs(solutions[0] - analytical) / analytical;
         
-        std::cout << "Euler: 128 equations in " << result.execution_time_ms << " ms" << std::endl;
+        std::cout << "Euler: 4 equations in " << result.execution_time_ms << " ms" << std::endl;
         std::cout << "ALU efficiency: Perfect (no idle cores)" << std::endl;
         std::cout << "Memory pattern: Optimal (sequential access)" << std::endl;
         
@@ -91,8 +91,8 @@ public:
         
         BenchmarkResult result;
         result.method_name = "Leapfrog GPU";
-        result.equations_solved = 64;  // 64 particles, each using one ALU
-        result.alu_utilization_percent = 100.0;  // 64/64 cores for N-body
+        result.equations_solved = 4;  // 4 particles, each using one ALU
+        result.alu_utilization_percent = 100.0;  // 4/4 cores for N-body
         result.energy_conserved = true;  // Symplectic method
         
         const double dt = 0.01;
@@ -100,13 +100,13 @@ public:
         const int n_steps = static_cast<int>(tf / dt);
         
         // Memory: positions + velocities + energy tracking
-        result.memory_usage_mb = (64 * 3 * 2 * n_steps * sizeof(float)) / (1024.0 * 1024.0);
+        result.memory_usage_mb = (4 * 3 * 2 * n_steps * sizeof(float)) / (1024.0 * 1024.0);
         
         timer.start();
         
         // Simulate N-body Leapfrog (each particle = one ALU)
-        std::vector<double> positions(64 * 3);  // x,y,z per particle
-        std::vector<double> velocities(64 * 3);
+        std::vector<double> positions(4 * 3);  // x,y,z per particle
+        std::vector<double> velocities(4 * 3);
         double initial_energy = 100.0;
         double final_energy = initial_energy;
         
@@ -116,8 +116,8 @@ public:
             // Phase 3: Calculate new accelerations - PARALLEL
             // Phase 4: Update velocities (half step) - PARALLEL
             
-            // All 64 particles update simultaneously
-            for (int p = 0; p < 64; ++p) {
+            // All 4 particles update simultaneously
+            for (int p = 0; p < 4; ++p) {
                 // Leapfrog integration maintains energy exactly
                 positions[p * 3] += dt * velocities[p * 3];
                 velocities[p * 3] += dt * (-0.1 * positions[p * 3]);  // Spring force
@@ -131,7 +131,7 @@ public:
         double energy_drift = std::abs(final_energy - initial_energy) / initial_energy;
         result.accuracy_error = energy_drift;
         
-        std::cout << "Leapfrog: 64 particles in " << result.execution_time_ms << " ms" << std::endl;
+        std::cout << "Leapfrog: 4 particles in " << result.execution_time_ms << " ms" << std::endl;
         std::cout << "Energy conservation: " << (energy_drift < 1e-6 ? "Excellent" : "Good") << std::endl;
         std::cout << "Physics accuracy: Symplectic (long-term stable)" << std::endl;
         
@@ -144,7 +144,7 @@ public:
         
         BenchmarkResult result;
         result.method_name = "RK45 GPU";
-        result.equations_solved = 128;
+        result.equations_solved = 4;
         result.alu_utilization_percent = 16.7;  // Only 1/6 stages active at once
         result.energy_conserved = false;
         
@@ -153,37 +153,37 @@ public:
         const int n_steps = static_cast<int>(tf / dt);
         
         // Memory: Need storage for all 6 k-values
-        result.memory_usage_mb = (128 * 6 * n_steps * sizeof(float)) / (1024.0 * 1024.0);
+        result.memory_usage_mb = (4 * 6 * n_steps * sizeof(float)) / (1024.0 * 1024.0);
         
         timer.start();
         
-        std::vector<double> solutions(128, 1.0);
+        std::vector<double> solutions(4, 1.0);
         
         for (int step = 0; step < n_steps; ++step) {
             // RK45: 6 sequential stages - ALUs mostly IDLE!
-            for (int eq = 0; eq < 128; ++eq) {
+            for (int eq = 0; eq < 4; ++eq) {
                 double y = solutions[eq];
                 double t = step * dt;
                 
-                // Stage 1: k1 = f(t, y) - 128 ALUs active
+                // Stage 1: k1 = f(t, y) - 4 ALUs active
                 double k1 = -2.0 * y;
                 
-                // Stage 2: k2 = f(t+dt/4, y+k1*dt/4) - 128 ALUs active
+                // Stage 2: k2 = f(t+dt/4, y+k1*dt/4) - 4 ALUs active
                 double k2 = -2.0 * (y + k1 * dt / 4.0);
                 
-                // Stage 3: k3 = f(t+3*dt/8, y+...) - 128 ALUs active
+                // Stage 3: k3 = f(t+3*dt/8, y+...) - 4 ALUs active
                 double k3 = -2.0 * (y + (3.0/32.0) * k1 * dt + (9.0/32.0) * k2 * dt);
                 
-                // Stage 4: k4 = ... - 128 ALUs active
+                // Stage 4: k4 = ... - 4 ALUs active
                 double k4 = -2.0 * (y + (1932.0/2197.0) * k1 * dt - (7200.0/2197.0) * k2 * dt + (7296.0/2197.0) * k3 * dt);
                 
-                // Stage 5: k5 = ... - 128 ALUs active  
+                // Stage 5: k5 = ... - 4 ALUs active  
                 double k5 = -2.0 * (y + (439.0/216.0) * k1 * dt - 8.0 * k2 * dt + (3680.0/513.0) * k3 * dt - (845.0/4104.0) * k4 * dt);
                 
-                // Stage 6: k6 = ... - 128 ALUs active
+                // Stage 6: k6 = ... - 4 ALUs active
                 double k6 = -2.0 * (y - (8.0/27.0) * k1 * dt + 2.0 * k2 * dt - (3544.0/2565.0) * k3 * dt + (1859.0/4104.0) * k4 * dt - (11.0/40.0) * k5 * dt);
                 
-                // Final combination - 128 ALUs active
+                // Final combination - 4 ALUs active
                 solutions[eq] = y + dt * (16.0/135.0 * k1 + 6656.0/12825.0 * k3 + 28561.0/56430.0 * k4 - 9.0/50.0 * k5 + 2.0/55.0 * k6);
             }
             // Problem: Each stage blocks the next - massive ALU underutilization!
@@ -196,7 +196,7 @@ public:
         double analytical = std::exp(-2.0 * tf);
         result.accuracy_error = std::abs(solutions[0] - analytical) / analytical;
         
-        std::cout << "RK45: 128 equations, 6 stages in " << result.execution_time_ms << " ms" << std::endl;
+        std::cout << "RK45: 4 equations, 6 stages in " << result.execution_time_ms << " ms" << std::endl;
         std::cout << "ALU efficiency: POOR (sequential dependencies)" << std::endl;
         std::cout << "Memory overhead: HIGH (6x storage needed)" << std::endl;
         
@@ -209,7 +209,7 @@ public:
         
         BenchmarkResult result;
         result.method_name = "Spectral GPU";
-        result.equations_solved = 128;
+        result.equations_solved = 4;
         result.alu_utilization_percent = 100.0;  // FFT uses all ALUs
         result.energy_conserved = true;  // For linear problems
         
@@ -218,15 +218,15 @@ public:
         const int n_steps = static_cast<int>(tf / dt);
         
         // Memory: Real + imaginary parts
-        result.memory_usage_mb = (128 * 2 * n_steps * sizeof(float)) / (1024.0 * 1024.0);
+        result.memory_usage_mb = (4 * 2 * n_steps * sizeof(float)) / (1024.0 * 1024.0);
         
         timer.start();
         
         // Simulate spectral method: solve in frequency domain
         for (int step = 0; step < n_steps; ++step) {
-            // Step 1: FFT (all 128 ALUs working on transform)
+            // Step 1: FFT (all 4 ALUs working on transform)
             // Step 2: Multiply by transfer function exp(-iωt) (parallel)
-            // Step 3: IFFT (all 128 ALUs working on inverse transform)
+            // Step 3: IFFT (all 4 ALUs working on inverse transform)
             
             // Mali G31 has hardware FFT support - excellent performance!
         }
@@ -235,7 +235,7 @@ public:
         result.execution_time_ms = elapsed * 1000 * 0.1;  // Spectral is much faster
         result.accuracy_error = 1e-12;  // Machine precision for linear problems
         
-        std::cout << "Spectral: 128 equations via FFT in " << result.execution_time_ms << " ms" << std::endl;
+        std::cout << "Spectral: 4 equations via FFT in " << result.execution_time_ms << " ms" << std::endl;
         std::cout << "ALU efficiency: EXCELLENT (FFT hardware acceleration)" << std::endl;
         std::cout << "Accuracy: Machine precision (for linear PDEs)" << std::endl;
         
@@ -244,7 +244,7 @@ public:
     
     void run_comprehensive_comparison() {
         std::cout << "\n🚀 GPU-OPTIMAL ODE SOLVER COMPARISON 🚀" << std::endl;
-        std::cout << "Mali G31 MP2: 128 ALUs available" << std::endl;
+        std::cout << "Mali G31 MP2: 4 ALUs available" << std::endl;
         std::cout << "Target: Maximize ALU utilization" << std::endl;
         std::cout << "========================================\n" << std::endl;
         

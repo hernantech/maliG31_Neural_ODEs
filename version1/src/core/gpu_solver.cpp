@@ -7,7 +7,7 @@
 
 const std::string compute_shader_source = R"(
 #version 310 es
-layout(local_size_x = 64) in;
+layout(local_size_x = 4) in;
 
 layout(std430, binding = 0) buffer StateBuffer {
     float state_data[];
@@ -244,7 +244,7 @@ void GPUSolver::solve(const ODESystem& system,
     
     // SINGLE GPU dispatch for ALL integration steps
     glUseProgram(program);
-    GLuint work_groups = (n_equations + 63) / 64;
+    GLuint work_groups = (n_equations + 3) / 4;
     glDispatchCompute(work_groups, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
     
