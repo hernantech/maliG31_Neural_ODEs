@@ -21,7 +21,6 @@ ode_solver/
 │   └── Performance validation tools
 │
 ├── archive/            # Legacy implementations and research
-├── .specstory/         # Development history and documentation
 └── Project configuration files
 ```
 
