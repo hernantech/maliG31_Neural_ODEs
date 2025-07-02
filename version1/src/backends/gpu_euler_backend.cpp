@@ -153,8 +153,8 @@ void GPUEulerBackend::solve(const ODESystem& system,
         buffer_mgr_.update_system_params(params);
         buffer_mgr_.update_time_control(time_ctrl);
         
-        // Dispatch compute shader
-        GLuint work_groups = (n_equations + 127) / 128;  // 128 threads per work group
+        // Dispatch compute shader - Mali G31 MP2 has 4 ALUs
+        GLuint work_groups = (n_equations + 3) / 4;  // 4 threads per work group
         glDispatchCompute(work_groups, 1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
         
